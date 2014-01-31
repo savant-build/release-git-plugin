@@ -43,7 +43,6 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
       fail("You can only run a release from a Git repository.")
     }
 
-
     Git git = new Git(project.directory)
     updateGitAndCheckWorkingCopy(git)
     checkIfTagIsAvailable(git)

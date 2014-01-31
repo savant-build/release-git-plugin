@@ -14,13 +14,11 @@
  * language governing permissions and limitations under the License.
  */
 package org.savantbuild.plugin.release
-
-import org.savantbuild.dep.domain.Artifact
-import org.savantbuild.dep.domain.ArtifactMetaData
-import org.savantbuild.dep.domain.License
-import org.savantbuild.dep.domain.Publication
-import org.savantbuild.dep.domain.Version
+import org.savantbuild.dep.domain.*
+import org.savantbuild.dep.workflow.FetchWorkflow
 import org.savantbuild.dep.workflow.PublishWorkflow
+import org.savantbuild.dep.workflow.Workflow
+import org.savantbuild.dep.workflow.process.CacheProcess
 import org.savantbuild.dep.workflow.process.SVNProcess
 import org.savantbuild.domain.Project
 import org.savantbuild.io.FileTools
@@ -34,9 +32,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-import static org.testng.Assert.assertEquals
-import static org.testng.Assert.assertTrue
-
+import static org.testng.Assert.*
 /**
  * Tests the ReleaseGitPlugin class.
  *
@@ -45,11 +41,25 @@ import static org.testng.Assert.assertTrue
 class ReleaseGitPluginTest {
   public static Path projectDir
 
+  Path gitDir
+
+  Path gitRemoteDir
+
   Output output
 
   Project project
 
   ReleaseGitPlugin plugin
+
+  Path svnDir
+
+  Path mainPub
+
+  Path mainPubSource
+
+  Path testPub
+
+  Path testPubSource
 
   @BeforeSuite
   public static void beforeSuite() {
@@ -70,38 +80,40 @@ class ReleaseGitPluginTest {
     project.version = new Version("1.0")
     project.license = License.Apachev2
 
-    plugin = new ReleaseGitPlugin(project, output)
-  }
+    project.workflow = new Workflow(
+        new FetchWorkflow(output, new CacheProcess(output, projectDir.resolve("src/test/repository").toString())),
+        new PublishWorkflow(new CacheProcess(output, projectDir.resolve("src/test/repository").toString()))
+    )
 
-  @Test
-  public void release() throws Exception {
+    plugin = new ReleaseGitPlugin(project, output)
+
     FileTools.prune(projectDir.resolve("build/test/release"))
     Files.createDirectories(projectDir.resolve("build/test/release/git-remote-repo"))
     Files.createDirectories(projectDir.resolve("build/test/release/git-repo"))
 
     // Create the git remote repository
-    Path gitRemoteDir = projectDir.resolve("build/test/release/git-remote-repo").toRealPath()
+    gitRemoteDir = projectDir.resolve("build/test/release/git-remote-repo").toRealPath()
     "git init --bare ${gitRemoteDir}".execute().waitFor()
 
     // Create a second git repository (the project) and make the first repository a remote
-    Path gitDir = projectDir.resolve("build/test/release/git-repo").toRealPath()
+    gitDir = projectDir.resolve("build/test/release/git-repo").toRealPath()
     "git init ${gitDir}".execute().waitFor()
     "git remote add origin ${gitRemoteDir.toUri()}".execute([], gitDir.toFile())
 
     // Create an SVN repository for publishing
-    Path svnDir = projectDir.resolve("build/test/release/svn-repo")
+    svnDir = projectDir.resolve("build/test/release/svn-repo")
     "svnadmin create ${svnDir}".execute().waitFor()
     svnDir = svnDir.toRealPath()
     project.publishWorkflow = new PublishWorkflow(new SVNProcess(output, svnDir.toUri().toString(), null, null))
 
     // Create the publications and the files
-    Path mainPub = gitDir.resolve("main-pub.txt")
+    mainPub = gitDir.resolve("main-pub.txt")
     Files.write(mainPub, "Main Pub".getBytes())
-    Path mainPubSource = gitDir.resolve("main-pub-source.txt")
+    mainPubSource = gitDir.resolve("main-pub-source.txt")
     Files.write(mainPubSource, "Main Pub Source".getBytes())
-    Path testPub = gitDir.resolve("test-pub.txt")
+    testPub = gitDir.resolve("test-pub.txt")
     Files.write(testPub, "Test Pub".getBytes())
-    Path testPubSource = gitDir.resolve("test-pub-source.txt")
+    testPubSource = gitDir.resolve("test-pub-source.txt")
     Files.write(testPubSource, "Test Pub Source".getBytes())
     "git add main-pub.txt".execute([], gitDir.toFile()).waitFor()
     "git add main-pub-source.txt".execute([], gitDir.toFile()).waitFor()
@@ -109,7 +121,117 @@ class ReleaseGitPluginTest {
     "git add test-pub-source.txt".execute([], gitDir.toFile()).waitFor()
     "git commit -am Test".execute([], gitDir.toFile()).waitFor()
     "git push -u origin master".execute([], gitDir.toFile()).waitFor()
+  }
 
+  @Test
+  public void releaseCanNotPull() throws Exception {
+    project.dependencies = null
+    setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
+
+    // Remove the git remote
+    "git remote remove origin".execute([], gitDir.toFile())
+
+    // Run the release
+    try {
+      plugin.release()
+      fail("Should have failed")
+    } catch (e) {
+      // Expected
+      assertNull(e.message)
+    }
+
+    assertReleaseDidNotRun()
+  }
+
+  @Test
+  public void releaseFromNonGitDirectory() throws Exception {
+    project.dependencies = null
+    setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
+
+    // Setup the bad directory and recreate the plugin
+    Files.createDirectories(projectDir.resolve("build/test/release/bad-project-dir"))
+    project = new Project(projectDir.resolve("build/test/release/bad-project-dir"), output)
+    plugin = new ReleaseGitPlugin(project, output)
+
+    // Run the release
+    try {
+      plugin.release()
+      fail("Should have failed")
+    } catch (e) {
+      // Expected
+      assertNull(e.message)
+    }
+
+    assertReleaseDidNotRun()
+  }
+
+  @Test
+  public void releaseWithDependencies() throws Exception {
+    project.dependencies = new Dependencies(
+        new DependencyGroup("compile", true,
+            new Dependency("org.savantbuild.test:intermediate:1.0.0", false)
+        ),
+        new DependencyGroup("test", false,
+            new Dependency("org.savantbuild.test:leaf1:1.0.0", false)
+        )
+    )
+    setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
+
+    // Run the release
+    plugin.release()
+
+    assertTagsExist()
+
+    // Verify the SubVersion publish and the AMD files
+    Path svnVerify = assertFilesPublishedToSVN()
+    assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-main-1.0.0.jar.amd"))),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<artifact-meta-data license=\"Commercial\">\n" +
+            "  <dependencies>\n" +
+            "    <dependency-group type=\"compile\">\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"intermediate\" name=\"intermediate\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "    </dependency-group>\n" +
+            "  </dependencies>\n" +
+            "</artifact-meta-data>\n"
+    )
+    assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0.jar.amd"))),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<artifact-meta-data license=\"Commercial\">\n" +
+            "  <dependencies>\n" +
+            "    <dependency-group type=\"compile\">\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"intermediate\" name=\"intermediate\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "    </dependency-group>\n" +
+            "  </dependencies>\n" +
+            "</artifact-meta-data>\n"
+    )
+  }
+
+  @Test
+  public void releaseWithoutDependencies() throws Exception {
+    project.dependencies = null
+    setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
+
+    // Run the release
+    plugin.release()
+
+    assertTagsExist()
+
+    // Verify the SubVersion publish and the AMD files
+    Path svnVerify = assertFilesPublishedToSVN()
+    assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-main-1.0.0.jar.amd"))),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<artifact-meta-data license=\"Commercial\">\n" +
+            "</artifact-meta-data>\n"
+    )
+    assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0.jar.amd"))),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<artifact-meta-data license=\"Commercial\">\n" +
+            "</artifact-meta-data>\n"
+    )
+  }
+
+  private
+  static void setupPublications(Project project, Path mainPub, Path mainPubSource, Path testPub, Path testPubSource) {
     Publication mainPublication = new Publication(
         new Artifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", License.Commercial),
         new ArtifactMetaData(project.dependencies, License.Commercial),
@@ -124,20 +246,21 @@ class ReleaseGitPluginTest {
     )
     project.publications.publicationGroups.put("main", [mainPublication])
     project.publications.publicationGroups.put("test", [testPublication])
+  }
 
-    // Run the release
-    plugin.release()
-
-    // Verify the tag
+  private void assertTagsExist() {
+    // Verify the tag exists
     String output = "git tag -l".execute([], gitDir.toFile()).text
-    assertTrue(output.contains("1.0"))
+    assertTrue(output.contains("1.0.0"))
 
     // Verify the tag is pushed
     output = "git tag -l".execute([], gitRemoteDir.toFile()).text
-    assertTrue(output.contains("1.0"))
+    assertTrue(output.contains("1.0.0"))
+  }
 
+  private Path assertFilesPublishedToSVN() {
     // Verify the publications are published
-    output = "svn list ${svnDir.toUri()}org/savantbuild/test/release-git-plugin-test/1.0.0".execute().text
+    String output = "svn list ${svnDir.toUri()}org/savantbuild/test/release-git-plugin-test/1.0.0".execute().text
     println "svn list ${svnDir.toUri()}org/savantbuild/test/release-git-plugin-test/1.0.0"
     println "svn output is ${output}"
     assertTrue(output.contains("release-git-plugin-main-1.0.0.jar"))
@@ -161,5 +284,31 @@ class ReleaseGitPluginTest {
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-main-1.0.0-src.jar"))), "Main Pub Source")
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0.jar"))), "Test Pub")
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0-src.jar"))), "Test Pub Source")
+    return svnVerify
+  }
+
+  private void assertReleaseDidNotRun() {
+    // Verify the tags don't exist
+    String output = "git tag -l".execute([], gitDir.toFile()).text
+    assertFalse(output.contains("1.0.0"))
+
+    // Verify the tag is pushed
+    output = "git tag -l".execute([], gitRemoteDir.toFile()).text
+    assertFalse(output.contains("1.0.0"))
+
+    // Verify the publications are published
+    output = "svn list ${svnDir.toUri()}org/savantbuild/test/release-git-plugin-test/1.0.0".execute().text
+    assertFalse(output.contains("release-git-plugin-main-1.0.0.jar"))
+    assertFalse(output.contains("release-git-plugin-main-1.0.0.jar.md5"))
+    assertFalse(output.contains("release-git-plugin-main-1.0.0.jar.amd"))
+    assertFalse(output.contains("release-git-plugin-main-1.0.0.jar.amd.md5"))
+    assertFalse(output.contains("release-git-plugin-main-1.0.0-src.jar"))
+    assertFalse(output.contains("release-git-plugin-main-1.0.0-src.jar.md5"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0.jar"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0.jar.md5"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0.jar.amd"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0.jar.amd.md5"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0-src.jar"))
+    assertFalse(output.contains("release-git-plugin-test-1.0.0-src.jar.md5"))
   }
 }
