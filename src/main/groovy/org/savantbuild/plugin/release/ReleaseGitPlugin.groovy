@@ -19,7 +19,6 @@ import org.savantbuild.domain.Project
 import org.savantbuild.output.Output
 import org.savantbuild.plugin.dep.DependencyPlugin
 import org.savantbuild.plugin.groovy.BaseGroovyPlugin
-import org.savantbuild.util.Graph
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -43,6 +42,10 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
       fail("You can only run a release from a Git repository.")
     }
 
+    if (!project.publishWorkflow) {
+      fail("You must specify a publishWorkflow in the project definition of your build.savant script.")
+    }
+
     Git git = new Git(project.directory)
     updateGitAndCheckWorkingCopy(git)
     checkIfTagIsAvailable(git)
@@ -53,12 +56,16 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void publish() {
+    output.info("Publishing project artifacts")
+
     project.publications.allPublications().each({ publication ->
       project.dependencyService.publish(publication, project.publishWorkflow)
     })
   }
 
   private void tag(Git git) {
+    output.info("Creating tag [${project.version}]")
+
     Process process = git.tag(project.version, "Release version [${project.version}].")
     if (process.exitValue() != 0) {
       fail("Unable to create Git tag for the release. Git output is:\n\n%s", process.text)
@@ -66,50 +73,59 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void checkPluginsForIntegrationVersions() {
+    output.info("Checking dependencies for integration versions")
+
     project.plugins.each({ dependency, plugin ->
       if (dependency.version.isIntegration()) {
-        fail("Your project depends on the integration version of the plugin [%s]. You cannot depend on integration " +
-            "builds of plugins when releasing a project.", dependency)
+        fail("Your project depends on the integration version of the plugin [${dependency}]. You cannot depend on " +
+            "integration builds of plugins when releasing a project.")
       }
     })
   }
 
   private void checkDependenciesForIntegrationVersions() {
+    output.info("Checking dependencies for integration versions")
+
     if (!project.artifactGraph) {
       return
     }
 
     project.artifactGraph.traverse(project.artifactGraph.root, true, { origin, destination, edge, depth ->
-      if (destination.version.isIntegration()) {
-        fail("Your project contains a dependency on the artifact [%s] which is an integration release. " +
-            "You cannot depend on any integration releases when releasing a project.", destination)
+      if (destination.version.integration) {
+        fail("Your project contains a dependency on the artifact [${destination}] which is an integration release. You " +
+            "cannot depend on any integration releases when releasing a project.")
       }
-    } as Graph.GraphConsumer)
+
+      return true
+    })
   }
 
   private void checkIfTagIsAvailable(Git git) {
+    output.info("Checking if tag [${project.version}] already exists")
+
     Process process = git.fetchTags()
     if (process.exitValue() != 0) {
       fail("Unable to fetch new tags from the remote git repository. Unable to perform a release.")
     }
 
     if (git.doesTagExist(project.version)) {
-      fail("It appears that the version [%s] has already been released.", project.version)
+      fail("It appears that the version [${project.version}] has already been released.")
     }
   }
 
-  private Git updateGitAndCheckWorkingCopy(Git git) {
+  private void updateGitAndCheckWorkingCopy(Git git) {
     // Do a pull
-    output.info("Updating working copy")
+    output.info("Updating working copy and verifying it can be released.")
+
     Process process = git.pull()
     if (process.exitValue() != 0) {
-      fail("Unable to pull from remote Git repository. Unable to perform a release. Git output is:\n\n%s", process.text)
+      fail("Unable to pull from remote Git repository. Unable to perform a release. Git output is:\n\n${process.text}")
     }
 
     // See if the working copy is ahead
     process = git.status("-sb")
     if (process.exitValue() != 0) {
-      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n%s", process.text)
+      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${process.text}")
     }
 
     String status = process.text.trim()
@@ -120,12 +136,12 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
     // Check for local modifications
     process = git.status("--porcelain")
     if (process.exitValue() != 0) {
-      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n%s", process.text)
+      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${process.text}")
     }
 
     status = process.text.trim()
     if (!status.isEmpty()) {
-      fail("Cannot release from a dirty directory. Git status output is:\n\n%s", status)
+      fail("Cannot release from a dirty directory. Git status output is:\n\n${status}")
     }
   }
 }

@@ -14,6 +14,7 @@
  * language governing permissions and limitations under the License.
  */
 package org.savantbuild.plugin.release
+
 import org.savantbuild.dep.domain.*
 import org.savantbuild.dep.workflow.FetchWorkflow
 import org.savantbuild.dep.workflow.PublishWorkflow
@@ -24,6 +25,7 @@ import org.savantbuild.domain.Project
 import org.savantbuild.io.FileTools
 import org.savantbuild.output.Output
 import org.savantbuild.output.SystemOutOutput
+import org.savantbuild.runtime.BuildFailureException
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
@@ -33,6 +35,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 
 import static org.testng.Assert.*
+
 /**
  * Tests the ReleaseGitPlugin class.
  *
@@ -48,8 +51,6 @@ class ReleaseGitPluginTest {
   Output output
 
   Project project
-
-  ReleaseGitPlugin plugin
 
   Path svnDir
 
@@ -84,8 +85,6 @@ class ReleaseGitPluginTest {
         new FetchWorkflow(output, new CacheProcess(output, projectDir.resolve("src/test/repository").toString())),
         new PublishWorkflow(new CacheProcess(output, projectDir.resolve("src/test/repository").toString()))
     )
-
-    plugin = new ReleaseGitPlugin(project, output)
 
     FileTools.prune(projectDir.resolve("build/test/release"))
     Files.createDirectories(projectDir.resolve("build/test/release/git-remote-repo"))
@@ -133,11 +132,12 @@ class ReleaseGitPluginTest {
 
     // Run the release
     try {
+      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
       plugin.release()
       fail("Should have failed")
     } catch (e) {
       // Expected
-      assertNull(e.message)
+      assertTrue(e.message.contains("Unable to pull from remote Git repository"))
     }
 
     assertReleaseDidNotRun()
@@ -151,22 +151,22 @@ class ReleaseGitPluginTest {
     // Setup the bad directory and recreate the plugin
     Files.createDirectories(projectDir.resolve("build/test/release/bad-project-dir"))
     project = new Project(projectDir.resolve("build/test/release/bad-project-dir"), output)
-    plugin = new ReleaseGitPlugin(project, output)
 
     // Run the release
     try {
+      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
       plugin.release()
       fail("Should have failed")
     } catch (e) {
       // Expected
-      assertNull(e.message)
+      assertTrue(e.message.contains("You can only run a release from a Git repository."))
     }
 
     assertReleaseDidNotRun()
   }
 
   @Test
-  public void releaseWithDependencies() throws Exception {
+  public void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
             new Dependency("org.savantbuild.test:intermediate:1.0.0", false)
@@ -178,7 +178,32 @@ class ReleaseGitPluginTest {
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
     // Run the release
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+    try {
+      plugin.release()
+      fail("Should have failed")
+    } catch (BuildFailureException e) {
+      assertTrue(e.message.contains("integration release"))
+    }
+  }
+
+  @Test
+  public void releaseWithDependencies() throws Exception {
+    project.dependencies = new Dependencies(
+        new DependencyGroup("compile", true,
+            new Dependency("org.savantbuild.test:leaf2:1.0.0", false)
+        ),
+        new DependencyGroup("test", false,
+            new Dependency("org.savantbuild.test:leaf1:1.0.0", false)
+        )
+    )
+    setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
+
+    // Run the release
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
     plugin.release()
+
+    assertNotNull(project.artifactGraph)
 
     assertTagsExist()
 
@@ -189,7 +214,7 @@ class ReleaseGitPluginTest {
             "<artifact-meta-data license=\"Commercial\">\n" +
             "  <dependencies>\n" +
             "    <dependency-group type=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"intermediate\" name=\"intermediate\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
@@ -199,7 +224,7 @@ class ReleaseGitPluginTest {
             "<artifact-meta-data license=\"Commercial\">\n" +
             "  <dependencies>\n" +
             "    <dependency-group type=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"intermediate\" name=\"intermediate\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
@@ -212,6 +237,7 @@ class ReleaseGitPluginTest {
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
     // Run the release
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
     plugin.release()
 
     assertTagsExist()
