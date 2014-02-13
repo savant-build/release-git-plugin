@@ -73,7 +73,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void checkPluginsForIntegrationVersions() {
-    output.info("Checking dependencies for integration versions")
+    output.info("Checking plugins for integration versions")
 
     project.plugins.each({ dependency, plugin ->
       if (dependency.version.isIntegration()) {
