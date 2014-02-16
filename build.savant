@@ -17,7 +17,7 @@ import java.nio.file.Paths
  */
 savantVersion = "0.1.0"
 
-project(group: "org.savantbuild.plugin", name: "release-git", version: "0.1.0", license: "Apachev2") {
+project(group: "org.savantbuild.plugin", name: "release-git", version: "0.1.1", license: "Apachev2") {
   workflow {
     standard()
   }
@@ -33,7 +33,7 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "0.1.0", 
       dependency(id: "org.savantbuild:savant-utils:${savantVersion}")
     }
     group(type: "compile") {
-      dependency(id: "org.savantbuild.plugin:dependency:${savantVersion}")
+      dependency(id: "org.savantbuild.plugin:dependency:0.1.1")
     }
     group(type: "test-compile", export: false) {
       dependency(id: "org.testng:testng:6.8.7")
@@ -47,8 +47,8 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "0.1.0", 
 
 // Plugins
 dependency = loadPlugin(id: "org.savantbuild.plugin:dependency:${savantVersion}")
-groovy = loadPlugin(id: "org.savantbuild.plugin:groovy:${savantVersion}")
-groovyTestNG = loadPlugin(id: "org.savantbuild.plugin:groovy-testng:${savantVersion}")
+groovy = loadPlugin(id: "org.savantbuild.plugin:groovy:0.1.1")
+groovyTestNG = loadPlugin(id: "org.savantbuild.plugin:groovy-testng:0.1.1")
 idea = loadPlugin(id: "org.savantbuild.plugin:idea:${savantVersion}")
 release = loadPlugin(id: "org.savantbuild.plugin:release-git:${savantVersion}")
 
@@ -79,6 +79,10 @@ target(name: "jar", description: "JARs the project", dependsOn: ["compile"]) {
 
 target(name: "test", description: "Runs the project's tests", dependsOn: ["jar"]) {
   groovyTestNG.test()
+}
+
+target(name: "doc", description: "Generate the project's GroovyDoc", dependsOn: ["jar"]) {
+  groovy.document()
 }
 
 target(name: "int", description: "Releases a local integration build of the project", dependsOn: ["test"]) {
