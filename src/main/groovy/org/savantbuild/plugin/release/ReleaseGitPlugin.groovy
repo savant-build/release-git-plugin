@@ -19,6 +19,7 @@ import org.savantbuild.domain.Project
 import org.savantbuild.output.Output
 import org.savantbuild.plugin.dep.DependencyPlugin
 import org.savantbuild.plugin.groovy.BaseGroovyPlugin
+import org.savantbuild.runtime.RuntimeConfiguration
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,9 +31,9 @@ import java.nio.file.Path
  */
 class ReleaseGitPlugin extends BaseGroovyPlugin {
 
-  ReleaseGitPlugin(Project project, Output output) {
-    super(project, output)
-    new DependencyPlugin(project, output)
+  ReleaseGitPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
+    super(project, runtimeConfiguration, output)
+    new DependencyPlugin(project, runtimeConfiguration, output)
   }
 
   void release() {

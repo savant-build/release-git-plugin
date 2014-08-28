@@ -26,6 +26,7 @@ import org.savantbuild.io.FileTools
 import org.savantbuild.output.Output
 import org.savantbuild.output.SystemOutOutput
 import org.savantbuild.runtime.BuildFailureException
+import org.savantbuild.runtime.RuntimeConfiguration
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
@@ -132,7 +133,7 @@ class ReleaseGitPluginTest {
 
     // Run the release
     try {
-      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, new RuntimeConfiguration(), output)
       plugin.release()
       fail("Should have failed")
     } catch (e) {
@@ -154,7 +155,7 @@ class ReleaseGitPluginTest {
 
     // Run the release
     try {
-      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+      ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, new RuntimeConfiguration(), output)
       plugin.release()
       fail("Should have failed")
     } catch (e) {
@@ -178,7 +179,7 @@ class ReleaseGitPluginTest {
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
     // Run the release
-    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, new RuntimeConfiguration(), output)
     try {
       plugin.release()
       fail("Should have failed")
@@ -200,7 +201,7 @@ class ReleaseGitPluginTest {
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
     // Run the release
-    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, new RuntimeConfiguration(), output)
     plugin.release()
 
     assertNotNull(project.artifactGraph)
@@ -237,7 +238,7 @@ class ReleaseGitPluginTest {
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
     // Run the release
-    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, output)
+    ReleaseGitPlugin plugin = new ReleaseGitPlugin(project, new RuntimeConfiguration(), output)
     plugin.release()
 
     assertTagsExist()
