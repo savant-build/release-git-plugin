@@ -170,10 +170,10 @@ class ReleaseGitPluginTest {
   public void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Dependency("org.savantbuild.test:intermediate:1.0.0", false)
+            new Artifact("org.savantbuild.test:intermediate:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Dependency("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -192,10 +192,10 @@ class ReleaseGitPluginTest {
   public void releaseWithDependencies() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Dependency("org.savantbuild.test:leaf2:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf2:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Dependency("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -260,13 +260,13 @@ class ReleaseGitPluginTest {
   private
   static void setupPublications(Project project, Path mainPub, Path mainPubSource, Path testPub, Path testPubSource) {
     Publication mainPublication = new Publication(
-        new Artifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", License.Commercial),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", License.Commercial),
         new ArtifactMetaData(project.dependencies, License.Commercial),
         mainPub,
         mainPubSource
     )
     Publication testPublication = new Publication(
-        new Artifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0:jar", License.Commercial),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0:jar", License.Commercial),
         new ArtifactMetaData(project.dependencies, License.Commercial),
         testPub,
         testPubSource
