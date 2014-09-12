@@ -27,14 +27,15 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "0.2.0", 
   }
 
   dependencies {
-    group(type: "provided") {
+    group(name: "provided") {
       dependency(id: "org.savantbuild:savant-core:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-dependency-management:${savantVersion}")
       dependency(id: "org.savantbuild:savant-utils:${savantVersion}")
     }
-    group(type: "compile") {
+    group(name: "compile") {
       dependency(id: "org.savantbuild.plugin:dependency:${savantVersion}")
     }
-    group(type: "test-compile", export: false) {
+    group(name: "test-compile", export: false) {
       dependency(id: "org.testng:testng:6.8.7")
     }
   }

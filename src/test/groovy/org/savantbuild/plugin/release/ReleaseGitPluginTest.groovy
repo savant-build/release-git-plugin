@@ -170,10 +170,10 @@ class ReleaseGitPluginTest {
   public void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:intermediate:1.0.0")
+            new Artifact("org.savantbuild.test:intermediate:1.0.0", false)
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0")
+            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -192,10 +192,10 @@ class ReleaseGitPluginTest {
   public void releaseWithDependencies() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:leaf2:1.0.0")
+            new Artifact("org.savantbuild.test:leaf2:1.0.0", false)
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0")
+            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -214,8 +214,8 @@ class ReleaseGitPluginTest {
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data license=\"Commercial\">\n" +
             "  <dependencies>\n" +
-            "    <dependency-group type=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "    <dependency-group name=\"compile\">\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
@@ -224,8 +224,8 @@ class ReleaseGitPluginTest {
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data license=\"Commercial\">\n" +
             "  <dependencies>\n" +
-            "    <dependency-group type=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\" optional=\"false\"/>\n" +
+            "    <dependency-group name=\"compile\">\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
