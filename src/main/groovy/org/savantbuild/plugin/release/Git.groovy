@@ -17,6 +17,8 @@ package org.savantbuild.plugin.release
 
 import java.nio.file.Path
 
+import static org.savantbuild.lang.RuntimeTools.ProcessResult
+
 /**
  * Wrap for git commands. This executes git directly and does not use a Git library. Therefore, Git must be in the users
  * PATH.
@@ -34,36 +36,30 @@ class Git {
    * Performs a "git pull" command and returns the Process. This waits for the process to complete. The caller can check
    * the Process for the exit code and any output.
    *
-   * @return The Process.
+   * @return The ProcessResult.
    */
-  Process pull() {
-    Process process = "git pull".execute([], projectDirectory.toFile())
-    process.waitFor()
-    return process
+  ProcessResult pull() {
+    return exec("git", "pull")
   }
 
   /**
    * Performs a "git status" command and returns the Process. This waits for the process to complete. The caller can check
    * the Process for the exit code and any output.
    *
-   * @return The Process.
+   * @return The ProcessResult.
    */
-  Process status(options) {
-    Process process = "git status ${options}".execute([], projectDirectory.toFile())
-    process.waitFor()
-    return process
+  ProcessResult status(options) {
+    return exec("git", "status", options)
   }
 
   /**
    * Fetches the new tags from the remote repository by performing a "git fetch -t". This waits for the process to
    * complete. The caller can check the Process for the exit code and any output.
    *
-   * @return The Process.
+   * @return The ProcessResult.
    */
-  Process fetchTags() {
-    Process process = "git fetch -t".execute([], projectDirectory.toFile())
-    process.waitFor()
-    return process
+  ProcessResult fetchTags() {
+    return exec("git", "fetch", "-t")
   }
 
   /**
@@ -74,14 +70,12 @@ class Git {
    * @throws RuntimeException If the "git tag -l" command fails.
    */
   boolean doesTagExist(tagName) throws RuntimeException {
-    Process process = "git tag -l ${tagName}".execute([], projectDirectory.toFile())
-    process.waitFor()
-    if (process.exitValue() != 0) {
+    ProcessResult result = exec("git", "tag", "-l", tagName.toString())
+    if (result.exitCode != 0) {
       throw new RuntimeException("Unable to list the git tags.")
     }
 
-    String output = process.text
-    return (output != null && output.length() > 0)
+    return result.output != null && result.output.length() > 0
   }
 
   /**
@@ -90,26 +84,33 @@ class Git {
    *
    * @param tagName The tag to create.
    * @param comment The comment used in the commit for the tag.
-   * @return The Process for the second step (pushing the tags to the remote).
    */
-  Process tag(tagName, comment) throws RuntimeException {
-    StringBuilder out = new StringBuilder()
-    StringBuilder err = new StringBuilder()
-    Process process = ["git", "tag", "-a", tagName, "-m", comment].execute([], projectDirectory.toFile())
-    process.consumeProcessOutput(out, err)
-    process.waitFor()
-    if (process.exitValue() != 0) {
-      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository. Exit code [${process.exitValue()}]. Output is [${out}]. Error is [${err}].")
+  void tag(tagName, comment) throws RuntimeException {
+    ProcessResult result = exec("git", "tag", "-a", tagName.toString(), "-m", comment)
+    if (result.exitCode != 0) {
+      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository. Exit code [${result.exitCode}]. Output is [${result.output}].")
     }
 
-    out = new StringBuilder()
-    err = new StringBuilder()
-    process = "git push --tags".execute([], projectDirectory.toFile())
-    process.consumeProcessOutput(out, err)
-    process.waitFor()
-    if (process.exitValue() != 0) {
-      throw new RuntimeException("Unable to push the tag [${tagName}] to the remote git repository. Exit code [${process.exitValue()}]. Output is [${out}]. Error is [${err}].")
+    result = exec("git", "push", "--tags")
+    if (result.exitCode != 0) {
+      throw new RuntimeException("Unable to push the tag [${tagName}] in the remote git repository. Exit code [${result.exitCode}]. Output is [${result.output}].")
     }
-    return process
+  }
+
+  private ProcessResult exec(String... command) {
+    Process process = new ProcessBuilder(command)
+        .directory(projectDirectory.toFile())
+        .redirectErrorStream(true)
+        .start()
+
+    InputStream is = process.getInputStream()
+    byte[] buf = new byte[1024]
+    ByteArrayOutputStream baos = new ByteArrayOutputStream(1024)
+    int length
+    while ((length = is.read(buf)) != -1) {
+      baos.write(buf, 0, length)
+    }
+
+    return new ProcessResult(process.waitFor(), baos.toString("UTF-8"))
   }
 }

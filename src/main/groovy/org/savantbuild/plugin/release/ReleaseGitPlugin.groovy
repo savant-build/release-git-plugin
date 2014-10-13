@@ -15,14 +15,16 @@
  */
 package org.savantbuild.plugin.release
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import org.savantbuild.domain.Project
 import org.savantbuild.output.Output
 import org.savantbuild.plugin.dep.DependencyPlugin
 import org.savantbuild.plugin.groovy.BaseGroovyPlugin
 import org.savantbuild.runtime.RuntimeConfiguration
 
-import java.nio.file.Files
-import java.nio.file.Path
+import static org.savantbuild.lang.RuntimeTools.ProcessResult
 
 /**
  * Release git plugin. This releases a project that is maintained in a Git repository.
@@ -67,9 +69,10 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   private void tag(Git git) {
     output.info("Creating tag [${project.version}]")
 
-    Process process = git.tag(project.version, "Release version [${project.version}].")
-    if (process.exitValue() != 0) {
-      fail("Unable to create Git tag for the release. Git output is:\n\n%s", process.text)
+    try {
+      git.tag(project.version, "Release version [${project.version}].")
+    } catch (RuntimeException e) {
+      fail("Unable to create Git tag for the release. Error is [%s]", e.getMessage())
     }
   }
 
@@ -104,8 +107,8 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   private void checkIfTagIsAvailable(Git git) {
     output.info("Checking if tag [${project.version}] already exists")
 
-    Process process = git.fetchTags()
-    if (process.exitValue() != 0) {
+    ProcessResult result = git.fetchTags()
+    if (result.exitCode != 0) {
       fail("Unable to fetch new tags from the remote git repository. Unable to perform a release.")
     }
 
@@ -118,29 +121,29 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
     // Do a pull
     output.info("Updating working copy and verifying it can be released.")
 
-    Process process = git.pull()
-    if (process.exitValue() != 0) {
-      fail("Unable to pull from remote Git repository. Unable to perform a release. Git output is:\n\n${process.text}")
+    ProcessResult result = git.pull()
+    if (result.exitCode != 0) {
+      fail("Unable to pull from remote Git repository. Unable to perform a release. Git output is:\n\n${result.output}")
     }
 
     // See if the working copy is ahead
-    process = git.status("-sb")
-    if (process.exitValue() != 0) {
-      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${process.text}")
+    result = git.status("-sb")
+    if (result.exitCode != 0) {
+      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${result.output}")
     }
 
-    String status = process.text.trim()
+    String status = result.output.trim()
     if (status.toLowerCase().contains("ahead")) {
       fail("Your git working copy appears to have local changes that haven't been pushed. Unable to perform a release.")
     }
 
     // Check for local modifications
-    process = git.status("--porcelain")
-    if (process.exitValue() != 0) {
-      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${process.text}")
+    result = git.status("--porcelain")
+    if (result.exitCode != 0) {
+      fail("Unable to check the status of your local git repository. Unable to perform a release. Git output is:\n\n${result.output}")
     }
 
-    status = process.text.trim()
+    status = result.output.trim()
     if (!status.isEmpty()) {
       fail("Cannot release from a dirty directory. Git status output is:\n\n${status}")
     }
