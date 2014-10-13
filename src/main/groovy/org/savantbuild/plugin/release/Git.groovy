@@ -93,14 +93,23 @@ class Git {
    * @return The Process for the second step (pushing the tags to the remote).
    */
   Process tag(tagName, comment) throws RuntimeException {
+    StringBuilder out = new StringBuilder()
+    StringBuilder err = new StringBuilder()
     Process process = ["git", "tag", "-a", tagName, "-m", comment].execute([], projectDirectory.toFile())
+    process.consumeProcessOutput(out, err)
     process.waitFor()
     if (process.exitValue() != 0) {
-      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository. Output is [${process.text}].")
+      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository. Exit code [${process.exitValue()}]. Output is [${out}]. Error is [${err}].")
     }
 
+    out = new StringBuilder()
+    err = new StringBuilder()
     process = "git push --tags".execute([], projectDirectory.toFile())
+    process.consumeProcessOutput(out, err)
     process.waitFor()
+    if (process.exitValue() != 0) {
+      throw new RuntimeException("Unable to push the tag [${tagName}] to the remote git repository. Exit code [${process.exitValue()}]. Output is [${out}]. Error is [${err}].")
+    }
     return process
   }
 }
