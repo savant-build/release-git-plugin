@@ -55,7 +55,7 @@ class Git {
   }
 
   /**
-   * Fetches the new tags from the remote repository by performing a "git fetch -t". This wiats for the process to
+   * Fetches the new tags from the remote repository by performing a "git fetch -t". This waits for the process to
    * complete. The caller can check the Process for the exit code and any output.
    *
    * @return The Process.
@@ -96,7 +96,7 @@ class Git {
     Process process = ["git", "tag", "-a", tagName, "-m", comment].execute([], projectDirectory.toFile())
     process.waitFor()
     if (process.exitValue() != 0) {
-      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository")
+      throw new RuntimeException("Unable to create the tag [${tagName}] in the local git repository. Output is [${process.text}].")
     }
 
     process = "git push --tags".execute([], projectDirectory.toFile())
