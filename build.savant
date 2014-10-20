@@ -17,7 +17,7 @@ import java.nio.file.Paths
  */
 savantVersion = "0.3.0"
 
-project(group: "org.savantbuild.plugin", name: "release-git", version: "0.3.3", licenses: ["ApacheV2_0"]) {
+project(group: "org.savantbuild.plugin", name: "release-git", version: "0.3.4", licenses: ["ApacheV2_0"]) {
   workflow {
     standard()
   }
@@ -33,10 +33,10 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "0.3.3", 
       dependency(id: "org.savantbuild:savant-utils:${savantVersion}")
     }
     group(name: "compile") {
-      dependency(id: "org.savantbuild.plugin:dependency:${savantVersion}")
+      dependency(id: "org.savantbuild.plugin:dependency:0.3.1")
     }
     group(name: "test-compile", export: false) {
-      dependency(id: "org.savantbuild:savant-io:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-io:0.3.1")
       dependency(id: "org.testng:testng:6.8.7")
     }
   }
@@ -61,10 +61,11 @@ groovyTestNG.settings.groovyVersion = "2.2"
 groovyTestNG.settings.javaVersion = "1.8"
 idea.settings.imlFile = Paths.get("release-git-plugin.iml")
 idea.settings.moduleMap = [
-    "org.savantbuild:savant-core:${savantVersion}":"savant-core",
-    "org.savantbuild:savant-dependency-management:${savantVersion}":"savant-dependency-management",
-    "org.savantbuild:savant-utils:${savantVersion}":"savant-utils",
-    "org.savantbuild.plugin:dependency:${savantVersion}":"dependency-plugin"
+    "org.savantbuild:savant-core:${savantVersion}"                 : "savant-core",
+    "org.savantbuild:savant-dependency-management:${savantVersion}": "savant-dependency-management",
+    "org.savantbuild:savant-io:0.3.1"                              : "savant-io",
+    "org.savantbuild:savant-utils:${savantVersion}"                : "savant-utils",
+    "org.savantbuild.plugin:dependency:0.3.1"                      : "dependency-plugin"
 ]
 
 target(name: "clean", description: "Cleans the project") {
