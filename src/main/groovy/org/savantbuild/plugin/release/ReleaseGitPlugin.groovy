@@ -59,7 +59,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void publish() {
-    output.info("Publishing project artifacts")
+    output.infoln("Publishing project artifacts")
 
     project.publications.allPublications().each({ publication ->
       project.dependencyService.publish(publication, project.publishWorkflow)
@@ -67,7 +67,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void tag(Git git) {
-    output.info("Creating tag [${project.version}]")
+    output.infoln("Creating tag [${project.version}]")
 
     try {
       git.tag(project.version, "Release version [${project.version}].")
@@ -77,7 +77,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void checkPluginsForIntegrationVersions() {
-    output.info("Checking plugins for integration versions")
+    output.infoln("Checking plugins for integration versions")
 
     project.plugins.each({ dependency, plugin ->
       if (dependency.version.isIntegration()) {
@@ -88,13 +88,13 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void checkDependenciesForIntegrationVersions() {
-    output.info("Checking dependencies for integration versions")
+    output.infoln("Checking dependencies for integration versions")
 
     if (!project.artifactGraph) {
       return
     }
 
-    project.artifactGraph.traverse(project.artifactGraph.root, true, { origin, destination, edge, depth ->
+    project.artifactGraph.traverse(project.artifactGraph.root, true, null, { origin, destination, edge, depth, isLast ->
       if (destination.version.integration) {
         fail("Your project contains a dependency on the artifact [${destination}] which is an integration release. You " +
             "cannot depend on any integration releases when releasing a project.")
@@ -105,7 +105,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
   }
 
   private void checkIfTagIsAvailable(Git git) {
-    output.info("Checking if tag [${project.version}] already exists")
+    output.infoln("Checking if tag [${project.version}] already exists")
 
     ProcessResult result = git.fetchTags()
     if (result.exitCode != 0) {
@@ -119,7 +119,7 @@ class ReleaseGitPlugin extends BaseGroovyPlugin {
 
   private void updateGitAndCheckWorkingCopy(Git git) {
     // Do a pull
-    output.info("Updating working copy and verifying it can be released.")
+    output.infoln("Updating working copy and verifying it can be released.")
 
     ProcessResult result = git.pull()
     if (result.exitCode != 0) {
