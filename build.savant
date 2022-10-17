@@ -13,9 +13,7 @@
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the License.
  */
-savantVersion = "1.0.0"
-
-project(group: "org.savantbuild.plugin", name: "release-git", version: "1.0.0", licenses: ["ApacheV2_0"]) {
+project(group: "org.savantbuild.plugin", name: "release-git", version: "2.0.0-RC.1", licenses: ["ApacheV2_0"]) {
   workflow {
     fetch {
       cache()
@@ -32,15 +30,15 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "1.0.0", 
 
   dependencies {
     group(name: "provided") {
-      dependency(id: "org.savantbuild:savant-core:${savantVersion}")
-      dependency(id: "org.savantbuild:savant-dependency-management:${savantVersion}")
-      dependency(id: "org.savantbuild:savant-utils:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-core:2.0.0-RC.1")
+      dependency(id: "org.savantbuild:savant-dependency-management:2.0.0-RC.1")
+      dependency(id: "org.savantbuild:savant-utils:2.0.0-RC.1")
     }
     group(name: "compile") {
-      dependency(id: "org.savantbuild.plugin:dependency:${savantVersion}")
+      dependency(id: "org.savantbuild.plugin:dependency:2.0.0-RC.1")
     }
     group(name: "test-compile", export: false) {
-      dependency(id: "org.savantbuild:savant-io:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-io:2.0.0-RC.1")
       dependency(id: "org.testng:testng:6.8.7")
     }
   }
@@ -58,18 +56,18 @@ idea = loadPlugin(id: "org.savantbuild.plugin:idea:1.0.1")
 release = loadPlugin(id: "org.savantbuild.plugin:release-git:1.0.0")
 
 // Plugin settings
-groovy.settings.groovyVersion = "2.4"
+groovy.settings.groovyVersion = "4.0"
 groovy.settings.javaVersion = "1.8"
 groovy.settings.jarManifest["Savant-Plugin-Class"] = "org.savantbuild.plugin.release.ReleaseGitPlugin"
-groovyTestNG.settings.groovyVersion = "2.4"
+groovyTestNG.settings.groovyVersion = "4.0"
 groovyTestNG.settings.javaVersion = "1.8"
 idea.settings.imlFile = "release-git-plugin.iml"
 idea.settings.moduleMap = [
-    "org.savantbuild:savant-core:${savantVersion}"                 : "savant-core",
-    "org.savantbuild:savant-dependency-management:${savantVersion}": "savant-dependency-management",
-    "org.savantbuild:savant-io:${savantVersion}"                   : "savant-io",
-    "org.savantbuild:savant-utils:${savantVersion}"                : "savant-utils",
-    "org.savantbuild.plugin:dependency:${savantVersion}"           : "dependency-plugin"
+    "org.savantbuild:savant-core:2.0.0-RC.1"                 : "savant-core",
+    "org.savantbuild:savant-dependency-management:2.0.0-RC.1": "savant-dependency-management",
+    "org.savantbuild:savant-io:2.0.0-RC.1"                   : "savant-io",
+    "org.savantbuild:savant-utils:2.0.0-RC.1"                : "savant-utils",
+    "org.savantbuild.plugin:dependency:2.0.0-RC.1"           : "dependency-plugin"
 ]
 
 target(name: "clean", description: "Cleans the project") {

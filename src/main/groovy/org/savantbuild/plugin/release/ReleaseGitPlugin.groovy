@@ -32,10 +32,12 @@ import static org.savantbuild.lang.RuntimeTools.ProcessResult
  * @author Brian Pontarelli
  */
 class ReleaseGitPlugin extends BaseGroovyPlugin {
+  DependencyPlugin dependencyPlugin
 
   ReleaseGitPlugin(Project project, RuntimeConfiguration runtimeConfiguration, Output output) {
     super(project, runtimeConfiguration, output)
-    new DependencyPlugin(project, runtimeConfiguration, output)
+
+    dependencyPlugin = new DependencyPlugin(project, runtimeConfiguration, output)
   }
 
   void release() {
