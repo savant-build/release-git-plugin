@@ -15,28 +15,38 @@
  */
 package org.savantbuild.plugin.release
 
-import org.savantbuild.dep.domain.*
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+
+import org.savantbuild.dep.domain.Artifact
+import org.savantbuild.dep.domain.ArtifactMetaData
+import org.savantbuild.dep.domain.Dependencies
+import org.savantbuild.dep.domain.DependencyGroup
+import org.savantbuild.dep.domain.License
+import org.savantbuild.dep.domain.Publication
+import org.savantbuild.dep.domain.ReifiedArtifact
 import org.savantbuild.dep.workflow.FetchWorkflow
 import org.savantbuild.dep.workflow.PublishWorkflow
 import org.savantbuild.dep.workflow.Workflow
 import org.savantbuild.dep.workflow.process.CacheProcess
 import org.savantbuild.dep.workflow.process.SVNProcess
 import org.savantbuild.domain.Project
+import org.savantbuild.domain.Version
 import org.savantbuild.io.FileTools
 import org.savantbuild.output.Output
 import org.savantbuild.output.SystemOutOutput
 import org.savantbuild.runtime.BuildFailureException
 import org.savantbuild.runtime.RuntimeConfiguration
-import org.savantbuild.util.MapBuilder
 import org.testng.annotations.BeforeMethod
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-
-import static org.testng.Assert.*
+import static org.testng.Assert.assertEquals
+import static org.testng.Assert.assertFalse
+import static org.testng.Assert.assertNotNull
+import static org.testng.Assert.assertTrue
+import static org.testng.Assert.fail
 
 /**
  * Tests the ReleaseGitPlugin class.
@@ -67,7 +77,7 @@ class ReleaseGitPluginTest {
   Path cacheDir
 
   @BeforeSuite
-  public static void beforeSuite() {
+  static void beforeSuite() {
     projectDir = Paths.get("")
     if (!Files.isRegularFile(projectDir.resolve("LICENSE"))) {
       projectDir = Paths.get("../release-git-plugin")
@@ -75,7 +85,7 @@ class ReleaseGitPluginTest {
   }
 
   @BeforeMethod
-  public void beforeMethod() {
+  void beforeMethod() {
     output = new SystemOutOutput(true)
     output.enableDebug()
 
@@ -83,7 +93,7 @@ class ReleaseGitPluginTest {
     project.group = "org.savantbuild.test"
     project.name = "release-git-plugin-test"
     project.version = new Version("1.0")
-    project.licenses.put(License.ApacheV2_0, null)
+    project.licenses.add(License.parse("ApacheV2_0", null))
 
     cacheDir = projectDir.resolve("../savant-dependency-management/test-deps/savant")
     project.workflow = new Workflow(
@@ -128,7 +138,7 @@ class ReleaseGitPluginTest {
   }
 
   @Test
-  public void releaseCanNotPull() throws Exception {
+  void releaseCanNotPull() throws Exception {
     project.dependencies = null
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
@@ -149,7 +159,7 @@ class ReleaseGitPluginTest {
   }
 
   @Test
-  public void releaseFromNonGitDirectory() throws Exception {
+  void releaseFromNonGitDirectory() throws Exception {
     project.dependencies = null
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
@@ -171,7 +181,7 @@ class ReleaseGitPluginTest {
   }
 
   @Test
-  public void releaseWithDependencyIntegrationBuild() throws Exception {
+  void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
             new Artifact("org.savantbuild.test:intermediate:1.0.0", false)
@@ -193,7 +203,7 @@ class ReleaseGitPluginTest {
   }
 
   @Test
-  public void releaseWithDependencies() throws Exception {
+  void releaseWithDependencies() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
             new Artifact("org.savantbuild.test:leaf2:1.0.0", false)
@@ -217,7 +227,7 @@ class ReleaseGitPluginTest {
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-main-1.0.0.jar.amd"))),
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data>\n" +
-            "  <license type=\"Commercial\"/>\n" +
+            "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "  <dependencies>\n" +
             "    <dependency-group name=\"compile\">\n" +
             "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
@@ -228,7 +238,7 @@ class ReleaseGitPluginTest {
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0.jar.amd"))),
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data>\n" +
-            "  <license type=\"Commercial\"/>\n" +
+            "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "  <dependencies>\n" +
             "    <dependency-group name=\"compile\">\n" +
             "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
@@ -239,7 +249,7 @@ class ReleaseGitPluginTest {
   }
 
   @Test
-  public void releaseWithoutDependencies() throws Exception {
+  void releaseWithoutDependencies() throws Exception {
     project.dependencies = null
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
 
@@ -254,13 +264,13 @@ class ReleaseGitPluginTest {
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-main-1.0.0.jar.amd"))),
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data>\n" +
-            "  <license type=\"Commercial\"/>\n" +
+            "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "</artifact-meta-data>\n"
     )
     assertEquals(new String(Files.readAllBytes(svnVerify.resolve("org/savantbuild/test/release-git-plugin-test/1.0.0/release-git-plugin-test-1.0.0.jar.amd"))),
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<artifact-meta-data>\n" +
-            "  <license type=\"Commercial\"/>\n" +
+            "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "</artifact-meta-data>\n"
     )
   }
@@ -268,14 +278,14 @@ class ReleaseGitPluginTest {
   private
   static void setupPublications(Project project, Path mainPub, Path mainPubSource, Path testPub, Path testPubSource) {
     Publication mainPublication = new Publication(
-        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", MapBuilder.simpleMap(License.Commercial, null)),
-        new ArtifactMetaData(project.dependencies, MapBuilder.simpleMap(License.Commercial, null)),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", [License.parse("Commercial", "License")]),
+        new ArtifactMetaData(project.dependencies, [License.parse("Commercial", "License")]),
         mainPub,
         mainPubSource
     )
     Publication testPublication = new Publication(
-        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0:jar", MapBuilder.simpleMap(License.Commercial, null)),
-        new ArtifactMetaData(project.dependencies, MapBuilder.simpleMap(License.Commercial, null)),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0:jar", [License.parse("Commercial", "License")]),
+        new ArtifactMetaData(project.dependencies, [License.parse("Commercial", "License")]),
         testPub,
         testPubSource
     )
