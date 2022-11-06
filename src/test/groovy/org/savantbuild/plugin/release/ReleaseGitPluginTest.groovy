@@ -184,10 +184,10 @@ class ReleaseGitPluginTest {
   void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:intermediate:1.0.0", false)
+            new Artifact("org.savantbuild.test:intermediate:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -206,10 +206,10 @@ class ReleaseGitPluginTest {
   void releaseWithDependencies() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:leaf2:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf2:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
