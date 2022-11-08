@@ -98,7 +98,8 @@ class ReleaseGitPluginTest {
     cacheDir = projectDir.resolve("../savant-dependency-management/test-deps/savant")
     project.workflow = new Workflow(
         new FetchWorkflow(output, new CacheProcess(output, cacheDir.toString())),
-        new PublishWorkflow(new CacheProcess(output, cacheDir.toString()))
+        new PublishWorkflow(new CacheProcess(output, cacheDir.toString())),
+        output
     )
 
     FileTools.prune(projectDir.resolve("build/test/release"))
@@ -184,10 +185,10 @@ class ReleaseGitPluginTest {
   void releaseWithDependencyIntegrationBuild() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:intermediate:1.0.0", false)
+            new Artifact("org.savantbuild.test:intermediate:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -206,10 +207,10 @@ class ReleaseGitPluginTest {
   void releaseWithDependencies() throws Exception {
     project.dependencies = new Dependencies(
         new DependencyGroup("compile", true,
-            new Artifact("org.savantbuild.test:leaf2:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf2:1.0.0")
         ),
         new DependencyGroup("test", false,
-            new Artifact("org.savantbuild.test:leaf1:1.0.0", false)
+            new Artifact("org.savantbuild.test:leaf1:1.0.0")
         )
     )
     setupPublications(project, mainPub, mainPubSource, testPub, testPubSource)
@@ -230,7 +231,8 @@ class ReleaseGitPluginTest {
             "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "  <dependencies>\n" +
             "    <dependency-group name=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\">\n" +
+            "      </dependency>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
@@ -241,7 +243,8 @@ class ReleaseGitPluginTest {
             "  <license type=\"Commercial\"><![CDATA[License]]></license>\n" +
             "  <dependencies>\n" +
             "    <dependency-group name=\"compile\">\n" +
-            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\"/>\n" +
+            "      <dependency group=\"org.savantbuild.test\" project=\"leaf2\" name=\"leaf2\" version=\"1.0.0\" type=\"jar\">\n" +
+            "      </dependency>\n" +
             "    </dependency-group>\n" +
             "  </dependencies>\n" +
             "</artifact-meta-data>\n"
