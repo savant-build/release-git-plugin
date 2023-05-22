@@ -76,6 +76,8 @@ class ReleaseGitPluginTest {
 
   Path cacheDir
 
+  Path integrationDir
+
   @BeforeSuite
   static void beforeSuite() {
     projectDir = Paths.get("")
@@ -96,9 +98,11 @@ class ReleaseGitPluginTest {
     project.licenses.add(License.parse("ApacheV2_0", null))
 
     cacheDir = projectDir.resolve("../savant-dependency-management/test-deps/savant")
+    integrationDir = projectDir.resolve("../savant-dependency-management/test-deps/integration")
+
     project.workflow = new Workflow(
-        new FetchWorkflow(output, new CacheProcess(output, cacheDir.toString())),
-        new PublishWorkflow(new CacheProcess(output, cacheDir.toString())),
+        new FetchWorkflow(output, new CacheProcess(output, cacheDir.toString(), integrationDir.toString())),
+        new PublishWorkflow(new CacheProcess(output, cacheDir.toString(), integrationDir.toString())),
         output
     )
 
