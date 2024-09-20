@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Inversoft Inc., All Rights Reserved
+ * Copyright (c) 2014-2024, Inversoft Inc., All Rights Reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class ReleaseGitPluginTest {
     project = new Project(projectDir.resolve("build/test/release/git-repo"), output)
     project.group = "org.savantbuild.test"
     project.name = "release-git-plugin-test"
-    project.version = new Version("1.0")
+    project.version = new Version("1.0.0")
     project.licenses.add(License.parse("ApacheV2_0", null))
 
     cacheDir = projectDir.resolve("../savant-dependency-management/test-deps/savant")
@@ -285,13 +285,13 @@ class ReleaseGitPluginTest {
   private
   static void setupPublications(Project project, Path mainPub, Path mainPubSource, Path testPub, Path testPubSource) {
     Publication mainPublication = new Publication(
-        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0:jar", [License.parse("Commercial", "License")]),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-main:1.0.0:jar", [License.parse("Commercial", "License")]),
         new ArtifactMetaData(project.dependencies, [License.parse("Commercial", "License")]),
         mainPub,
         mainPubSource
     )
     Publication testPublication = new Publication(
-        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0:jar", [License.parse("Commercial", "License")]),
+        new ReifiedArtifact("org.savantbuild.test:release-git-plugin-test:release-git-plugin-test:1.0.0:jar", [License.parse("Commercial", "License")]),
         new ArtifactMetaData(project.dependencies, [License.parse("Commercial", "License")]),
         testPub,
         testPubSource
