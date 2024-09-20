@@ -139,7 +139,7 @@ class ReleaseGitPluginTest {
     "git add test-pub.txt".execute([], gitDir.toFile()).waitFor()
     "git add test-pub-source.txt".execute([], gitDir.toFile()).waitFor()
     "git commit -am Test".execute([], gitDir.toFile()).waitFor()
-    "git push -u origin master".execute([], gitDir.toFile()).waitFor()
+    "git push -u origin main".execute([], gitDir.toFile()).waitFor()
   }
 
   @Test
