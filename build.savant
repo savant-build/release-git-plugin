@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2022, Inversoft Inc., All Rights Reserved
+ * Copyright (c) 2014-2024, Inversoft Inc., All Rights Reserved
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,8 @@
  * either express or implied. See the License for the specific
  * language governing permissions and limitations under the License.
  */
-project(group: "org.savantbuild.plugin", name: "release-git", version: "2.0.0-RC.6", licenses: ["Apache-2.0"]) {
+def savantVersion = "2.0.0-{integration}"
+project(group: "org.savantbuild.plugin", name: "release-git", version: "2.0.0", licenses: ["Apache-2.0"]) {
   workflow {
     fetch {
       cache()
@@ -30,16 +31,16 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "2.0.0-RC
 
   dependencies {
     group(name: "provided") {
-      dependency(id: "org.savantbuild:savant-core:2.0.0-RC.6")
-      dependency(id: "org.savantbuild:savant-dependency-management:2.0.0-RC.6")
-      dependency(id: "org.savantbuild:savant-utils:2.0.0-RC.6")
-      dependency(id: "org.savantbuild:savant-version:2.0.0-RC.6")
+      dependency(id: "org.savantbuild:savant-core:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-dependency-management:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-utils:${savantVersion}")
+      dependency(id: "org.savantbuild:savant-version:${savantVersion}")
     }
     group(name: "compile") {
-      dependency(id: "org.savantbuild.plugin:dependency:2.0.0-RC.6")
+      dependency(id: "org.savantbuild.plugin:dependency:${savantVersion}")
     }
     group(name: "test-compile", export: false) {
-      dependency(id: "org.savantbuild:savant-io:2.0.0-RC.6")
+      dependency(id: "org.savantbuild:savant-io:${savantVersion}")
       dependency(id: "org.testng:testng:6.8.7")
     }
   }
@@ -50,10 +51,10 @@ project(group: "org.savantbuild.plugin", name: "release-git", version: "2.0.0-RC
 }
 
 // Plugins
-dependency = loadPlugin(id: "org.savantbuild.plugin:dependency:2.0.0-RC.6")
+dependency = loadPlugin(id: "org.savantbuild.plugin:dependency:2.0.0-RC.7")
 groovy = loadPlugin(id: "org.savantbuild.plugin:groovy:2.0.0-RC.6")
 groovyTestNG = loadPlugin(id: "org.savantbuild.plugin:groovy-testng:2.0.0-RC.6")
-idea = loadPlugin(id: "org.savantbuild.plugin:idea:2.0.0-RC.6")
+idea = loadPlugin(id: "org.savantbuild.plugin:idea:2.0.0-RC.7")
 release = loadPlugin(id: "org.savantbuild.plugin:release-git:2.0.0-RC.6")
 
 // Plugin settings
@@ -63,14 +64,12 @@ groovy.settings.jarManifest["Savant-Plugin-Class"] = "org.savantbuild.plugin.rel
 groovyTestNG.settings.groovyVersion = "4.0"
 groovyTestNG.settings.javaVersion = "17"
 idea.settings.imlFile = "release-git-plugin.iml"
-idea.settings.moduleMap = [
-    "org.savantbuild:savant-core:2.0.0-RC.6"                  : "savant-core",
-    "org.savantbuild:savant-dependency-management:2.0.0-RC.6" : "savant-dependency-management",
-    "org.savantbuild:savant-io:2.0.0-RC.6"                    : "savant-io",
-    "org.savantbuild:savant-utils:2.0.0-RC.6"                 : "savant-utils",
-    "org.savantbuild:savant-version:2.0.0-RC.6"               : "savant-version",
-    "org.savantbuild.plugin:dependency:2.0.0-RC.6"            : "dependency-plugin"
-]
+idea.settings.moduleMap = ["org.savantbuild:savant-core:${savantVersion}"                 : "savant-core",
+                           "org.savantbuild:savant-dependency-management:${savantVersion}": "savant-dependency-management",
+                           "org.savantbuild:savant-io:${savantVersion}"                   : "savant-io",
+                           "org.savantbuild:savant-utils:${savantVersion}"                : "savant-utils",
+                           "org.savantbuild:savant-version:${savantVersion}"              : "savant-version",
+                           "org.savantbuild.plugin:dependency:${savantVersion}"           : "dependency-plugin"]
 
 target(name: "clean", description: "Cleans the project") {
   groovy.clean()
